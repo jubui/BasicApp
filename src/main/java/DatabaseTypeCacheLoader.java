@@ -1,0 +1,84 @@
+import static java.lang.Thread.sleep;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.google.common.base.Strings;
+import com.google.common.cache.CacheLoader;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+
+public class DatabaseTypeCacheLoader extends CacheLoader<String,String> {
+
+  private static ExecutorService pool = Executors.newFixedThreadPool(100);
+  @Override
+  public String load(String key) {
+    System.out.println("LOAD CALLED");
+    Future<String> future = pool.submit((Callable)() -> {
+      int sleepTime = (int)(Math.random() * 10000);
+      sleep(sleepTime);
+      return "avalue";
+    });
+
+    try {
+      String val = future.get(2, TimeUnit.SECONDS);
+      return val;
+    } catch (InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+      future.cancel(true);
+      return null;
+    }
+  }
+  /* We've learned that if empty is returned then the cache gets reloaded after the TTL*/
+
+  /* If RuntimeException is thrown from load, then the subsequent call to get will immediately trigger a load and after a valid value is in the cache, it'll expire after the TTL and then get loaded afterwards*/
+
+  @Override
+  public ListenableFuture<String> reload(String key, String oldDatabaseType) {
+    System.out.println("RELOADING");
+    if (false && Strings.isNullOrEmpty(oldDatabaseType)) {
+      // Any time the old database type is present, we can assume it is still correct. This is because
+      // JNDI data source can't change without a restart, and Admin Console and Connected System data sources
+      // both call DatabaseTypeUtils.invalidateDatabaseTypeForUuid(), which removes it from the cache
+      return Futures.immediateFuture(oldDatabaseType);
+    }
+//    ListeningExecutorService executorService = DatabaseTypeUtilsThreadPool.getExecutorServicePool();
+//    // This will execute in the background, so the timeout can be much higher. However, we don't want a
+//    // request to take forever and not actually time out, so we still set a timeout. Because this is happening
+//    // in the background, we must wrap the future in another future which will wake up and cancel the original
+//    // future if it is taking too long. We need a timeout because we do not want to build up a huge number of
+//    // threads waiting on database connections
+//    return Futures.withTimeout(executorService.submit(() -> getDatabaseType(dataSourceUuid)),
+//        ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS, (ScheduledExecutorService)executorService);
+
+
+    ListeningExecutorService executorService = DatabaseTypeUtilsThreadPool.getExecutorServicePool();
+    return Futures.withTimeout(executorService.submit(new DatabaseTypeCallable()), 60, TimeUnit.SECONDS, (ScheduledExecutorService)executorService);
+  }
+
+  class DatabaseTypeCallable implements Callable<String> {
+    public DatabaseTypeCallable() {
+    }
+
+    @Override
+    public String call() throws Exception {
+      int rand = (int)(Math.random() * 100);
+      if (rand < 70) { // 70% chance
+//        Thread.sleep(3000000);
+//        throw new RuntimeException("UH-OH");
+        long x = 0;
+        while(true) {
+          x++;
+        }
+      }
+      return "reloadValue";
+    }
+  }
+}
