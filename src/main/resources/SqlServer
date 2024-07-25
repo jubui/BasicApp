@@ -1,0 +1,72 @@
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.SQLException;
+import java.util.Properties;
+
+public class SqlServer {
+
+  public void execute() {
+    Driver d = null;
+    try {
+      d = (Driver) Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver").newInstance();
+      String connectionUrl = "jdbc:sqlserver://jubuiserver2.database.windows.net:1433;database=mynewdb;" +
+//      String connectionUrl = "jdbc:sqlserver://jbuserver.database.windows.net:1433;database=master;" +
+          // via dbeaver this fails due to password expired exception
+//          "user=julianbui@julianbuiorg.onmicrosoft.com;password=;encrypt=true;trustServerCertificate=false;" +
+
+          // dbeaver fails due to unknown service exception
+//          "user=julianbuiap_gmail.com#EXT#@julianbuiapgmail.onmicrosoft.com;password=<MYPASSWORD>;encrypt=true;trustServerCertificate=true;" + // Unknown service exception
+
+          // google: This error mean the user is invalid in the database that you are trying to connect, usually related to a AAD user that does not have user created on SQL DB that you are trying to connect (User DB or Master DB) or that the user is not the AAD Server Admin
+          // also, this is the same error I get when connecting via Azure Data Studio
+//          "user=jubui2@julianbuiapgmail.onmicrosoft.com;password=<MYPASSWORD>;encrypt=true;trustServerCertificate=true;" + // SQLServerException: Login failed for user '<token-identified principal>'. ClientConnectionId:9908f88a-fed7-4f6e-8e2a-82730f544464
+
+          // This failed when using authentication=ActiveDirectoryPassword - this also fails using dbeaver
+//          "user=julianbuiap@gmail.com;password=<MYPASSWORD>;encrypt=true;trustServerCertificate=true;" + // Failed to authenticate the user julianbuiap@gmail.com in Active Directory (Authentication=ActiveDirectoryPassword). WsTrust endpoint not found in metadata document
+
+          // This works when using authentication=ActiveDirectoryInteractive
+//          "user=julianbuiap@gmail.com;encrypt=true;trustServerCertificate=true;" + // Failed to authenticate the user julianbuiap@gmail.com in Active Directory (Authentication=ActiveDirectoryPassword). WsTrust endpoint not found in metadata document
+
+          // Does not work with authentication=ActiveDirectoryServicePrincipal
+          // "user=julianbuiap@gmail.com;password=<MYPASSWORD>;encrypt=true;trustServerCertificate=true;" + //  AADSTS700016: Application with identifier julianbuiap was not found in the directory Default Directory. This can happen if the application has not been installed by the administrator of the tenant or consented to by any user in the tenant.
+
+          // This works using ActiveDirectoryPassword!!!!
+//           "user=jubui2@julianbuiapgmail.onmicrosoft.com;password=#A]c,d>R,nUy97j;encrypt=true;trustServerCertificate=true;" +
+//           "hostNameInCertificate=*.database.windows.net;loginTimeout=30;authentication=ActiveDirectoryPassword";
+
+//          "user=jubui2@julianbuiapgmail.onmicrosoft.com;password=<MYPASSWORD>;encrypt=true;trustServerCertificate=false;" +
+          // "hostNameInCertificate=*.database.windows.net;loginTimeout=30;authentication=ActiveDirectoryPassword";
+
+
+          // WORKS! if you see Login failed for user '<token-identified principal>', the app needs to be registered in sqlserver itself
+          // "user=da07177f-f759-401c-ab42-8da88ee8edb5;password=cYk8Q~OyxtgfjeoNB.eX6mkIenAkDIvnPiexndpG;encrypt=true;trustServerCertificate=true;" +
+
+          // JDBC Driver 9.2
+//           "AADSecurePrincipalId=da07177f-f759-401c-ab42-8da88ee8edb5;AADSecurePrincipalSecret=cYk8Q~OyxtgfjeoNB.eX6mkIenAkDIvnPiexndpG;encrypt=true;trustServerCertificate=true;" +
+
+          // secret id and value
+          // Application with identifier 39f76158-1cbc-456f-a90f-4ac51ac9ac6d was not found in the directory
+          // "user=39f76158-1cbc-456f-a90f-4ac51ac9ac6d;password=cYk8Q~OyxtgfjeoNB.eX6mkIenAkDIvnPiexndpG;encrypt=true;trustServerCertificate=true;" +
+
+          // 3f0055e4-9bb5-4f2f-9e78-0934916d7561 was not found in the directory 2e98f43e-7160-4e03-98c1-b273726f2dc2.
+          // object id and secret value
+//          "user=3f0055e4-9bb5-4f2f-9e78-0934916d7561;password=cYk8Q~OyxtgfjeoNB.eX6mkIenAkDIvnPiexndpG;encrypt=true;trustServerCertificate=true;" +
+//          "hostNameInCertificate=*.database.windows.net;loginTimeout=30;authentication=ActiveDirectoryServicePrincipal";
+
+          "user=45e34d54-68fa-42ee-82ff-7a75c7eaa535;password=4Uf8Q~AA0rlj00nmrrBBOIYbzLJ0z9O0mQAlTcn6;encrypt=true;trustServerCertificate=true;" +
+          "hostNameInCertificate=*.database.windows.net;loginTimeout=5;authentication=ActiveDirectoryServicePrincipal";
+          Properties props =  new Properties()
+      Connection con = d.connect(connectionUrl, props);
+      System.out.println("Connected");
+    } catch (InstantiationException e) {
+      throw new RuntimeException(e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+
+  }
+}

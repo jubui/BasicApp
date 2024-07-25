@@ -1,0 +1,112 @@
+import io.opentracing.util.GlobalTracer;
+import org.apache.commons.codec.Charsets;
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.message.BasicHeader;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.client.*;
+
+import io.opentracing.Tracer;
+import io.opentracing.contrib.elasticsearch.common.TracingHttpClientConfigCallback;
+import org.elasticsearch.client.security.CreateApiKeyRequest;
+import org.elasticsearch.client.security.CreateApiKeyResponse;
+import org.elasticsearch.client.security.user.privileges.IndicesPrivileges;
+import org.elasticsearch.client.security.user.privileges.Role;
+import org.elasticsearch.common.settings.SecureString;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+
+public class EsApp {
+  public void execute() throws IOException {
+    List<HttpHost> hosts = new ArrayList<>();
+    hosts.add(new HttpHost("localhost", 9201));
+
+
+//    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//    credentialsProvider.setCredentials(AuthScope.ANY,
+//        new UsernamePasswordCredentials("appian", "ineedtoadminister"));
+//    credentialsProvider.setCredentials(AuthScope.ANY, );
+
+//    final Header apiKeyAuthHeader = new BasicHeader(HttpHeaders.AUTHORIZATION,
+//        "ApiKey NmZBdjlvMEI0bW9reFVvMkRVYzA6VUhwYmVJUkpUa0t3ZFdITE05UUpfdw==");
+
+    RestClientBuilder.HttpClientConfigCallback clientBuilder = httpClientBuilder ->
+        httpClientBuilder
+//            .setDefaultHeaders(Collections.singleton(apiKeyAuthHeader))
+//            .setDefaultCredentialsProvider(credentialsProvider)
+            // AN-184799: Enable TCP keepalives to detect dropped connections
+            .setDefaultIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build());
+
+//    Tracer tracer = new RestClientTracer(GlobalTracer.get());
+    RestClientBuilder restClientBuilder = RestClient.builder(hosts.toArray(new HttpHost[0]))
+        .setHttpClientConfigCallback(clientBuilder);
+    RestHighLevelClient client = new RestHighLevelClientBuilder(restClientBuilder.build())
+        .setApiCompatibilityMode(true)
+        .build();
+
+    ClusterHealthRequest clusterHealthRequest = new ClusterHealthRequest();
+    ClusterHealthResponse response = client.cluster().health(clusterHealthRequest, RequestOptions.DEFAULT);
+    System.out.println(response);
+
+    /*
+    final Role role = Role.builder()
+        .name("appian-role")
+        .clusterPrivileges("all", Role.ClusterPrivilegeName.MONITOR)
+        .indicesPrivileges(IndicesPrivileges.builder()
+            .indices("*")
+//            .allowRestrictedIndices(false)
+            .privileges(Role.IndexPrivilegeName.READ, Role.IndexPrivilegeName.CREATE, Role.IndexPrivilegeName.CREATE_DOC)
+//            .grantedFields("*")
+//            .query("{ \"term\": { \"public\": true } }")
+            .build())
+        .build();
+
+//    CreateApiKeyRequest createApiKeyRequest = new CreateApiKeyRequest("search-server", List.of(role), null, null);
+    CreateApiKeyRequest createApiKeyRequest = new CreateApiKeyRequest("search-server", List.of(), null, null);
+    try {
+      CreateApiKeyResponse createApiKeyResponse = client.security().createApiKey(createApiKeyRequest, RequestOptions.DEFAULT);
+      System.out.println("id: " + createApiKeyResponse.getId());
+      System.out.println("encoded: " + createApiKeyResponse.getEncoded());
+      SecureString key = createApiKeyResponse.getKey();
+      System.out.println("key: " + key.toString());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+ */
+  }
+
+  private final class ApiKey {
+    private String id;
+    private String encodedApiKey;
+    private String apiKey;
+    public ApiKey(String id, String encodedApiKey, String apiKey) {
+      this.id = id;
+      this.encodedApiKey = encodedApiKey;
+      this.apiKey = apiKey;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public String getEncodedApiKey() {
+      return encodedApiKey;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+  }
+}

@@ -23,9 +23,7 @@ public class DatabaseTypeCacheLoader extends CacheLoader<String,String> {
   public String load(String key) {
     System.out.println("LOAD CALLED");
     Future<String> future = pool.submit((Callable)() -> {
-      int sleepTime = (int)(Math.random() * 10000);
-      sleep(sleepTime);
-      return "avalue";
+      throw new RuntimeException("asdf exception");
     });
 
     try {
@@ -33,7 +31,7 @@ public class DatabaseTypeCacheLoader extends CacheLoader<String,String> {
       return val;
     } catch (InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
       future.cancel(true);
-      return null;
+      throw new RuntimeException("fdsa exception");
     }
   }
   /* We've learned that if empty is returned then the cache gets reloaded after the TTL*/

@@ -1,0 +1,27 @@
+package julian;
+
+import org.elasticsearch.common.logging.LogConfigurator;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.node.InternalSettingsPreparer;
+import org.elasticsearch.node.Node;
+
+import java.nio.file.Path;
+import java.util.Collections;
+
+public class EsAppNode {
+
+  public void execute() {
+    LogConfigurator.configureESLogging();
+    final Settings settings = Settings.builder()
+        .put("path.home", "/tmp/ss-0.313.0/elasticsearch")
+        .put("path.logs", "/tmp/ss-0.313.0/elasticsearch/logs")
+        .put("path.plugins", "/tmp/ss-0.313.0/elasticsearch/plugins")
+        .put("node.name", "nodename")
+        .build();
+    Path configDir = Path.of("/tmp", "ss-0.313.0", "elasticsearch", "conf");
+//Node n = new Node(InternalSettingsPreparer.prepareEnvironment(settings, Collections.emptyMap(), configDir, () -> "nodename"));
+//    Node n = new Node(InternalSettingsPreparer.prepareEnvironment(settings, Collections.emptyMap(), configDir, () -> "nodename"));
+    Node n = new Node(InternalSettingsPreparer.prepareEnvironment(settings, Collections.emptyMap(), configDir, () -> "nodename"));
+    return;
+  }
+}

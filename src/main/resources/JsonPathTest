@@ -1,0 +1,15 @@
+import com.jayway.jsonpath.JsonPath;
+
+public class JsonPathTest {
+
+      public static void execute() {
+
+        System.out.println((String)JsonPath.read("{\"a\" : 1}", "."));
+
+            /*
+             a!jsonPath("{""a"" : 1}", "."),
+			  a!jsonPath("[{""a"" : 1}]", ".")
+
+             */
+      }
+}
