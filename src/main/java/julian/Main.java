@@ -5,9 +5,11 @@ import java.io.IOException;
 public class Main {
 
   public static void main(String[] args) throws InterruptedException, IOException {
+    OracleTest oracleTest = new OracleTest();
+    oracleTest.execute();
 
-    MysqlCustomProviderTest mysqlCustomProviderTest = new MysqlCustomProviderTest();
-    mysqlCustomProviderTest.execute();
+//    MysqlCustomProviderTest mysqlCustomProviderTest = new MysqlCustomProviderTest();
+//    mysqlCustomProviderTest.execute();
 
 //    CertTest certTest = new CertTest();
 //    certTest.execute();
