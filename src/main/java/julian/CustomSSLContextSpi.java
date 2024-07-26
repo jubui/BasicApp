@@ -2,38 +2,23 @@ package julian;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.security.*;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-public class MysqlSSLContextSpi extends SSLContextSpi {
+public class CustomSSLContextSpi extends SSLContextSpi {
   private SSLContext delegate;
   private TrustManagerFactory tmf;
 
-  private void addCert(KeyStore ks, String certPath, String alias) throws CertificateException, FileNotFoundException, KeyStoreException {
-    CertificateFactory cf = CertificateFactory.getInstance("X.509");
-    System.out.println("Loading: " + certPath);
-    InputStream is = new FileInputStream(certPath);
-    X509Certificate mycert = (X509Certificate) cf.generateCertificate(is);
-
-    ks.setCertificateEntry(alias, mycert);
-  }
-  public MysqlSSLContextSpi() throws NoSuchAlgorithmException {
+  public CustomSSLContextSpi() throws NoSuchAlgorithmException {
     // Initialize with a standard SSLContext implementation
-    System.out.println("JULIAN2");
-//    this.delegate = SSLContext.getInstance("TLS");
-//    SSLParameters sslParameters = delegate.getDefaultSSLParameters();
-//    sslParameters.setProtocols(new String[]{"TLS"});
+    System.out.println("JULIAN MysqlSSLContextSpi constructor");
 
     try {
-
-       tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
       ks.load(null); // You don't need the KeyStore instance to come from a file.
-
 
       for (int i = 1; i <= 5; i++) {
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
@@ -44,20 +29,7 @@ public class MysqlSSLContextSpi extends SSLContextSpi {
 
         ks.setCertificateEntry("mycert" + i, mycert);
       }
-
-      /*
-      addCert(ks, "/Users/julian.bui/Downloads/global-bundle.pem", "global-bundle");
-       */
-
       tmf.init(ks);
-      for (TrustManager tm : tmf.getTrustManagers()) {
-        System.out.println(tm);
-      }
-      // Create SSLContext with desired SSL/TLS configuration
-//      SSLContext sslContext = SSLContext.getInstance("TLS");
-      // Initialize SSLContext. Example: using default TrustManager and KeyManager
-//      sslContext.init(null, tmf.getTrustManagers(), null);
-//      delegate = sslContext;
     } catch (Exception e) {
       System.out.println("JULIAN, error: " + e);
       e.printStackTrace();
@@ -67,74 +39,70 @@ public class MysqlSSLContextSpi extends SSLContextSpi {
   @Override
   protected void engineInit(KeyManager[] km, TrustManager[] tm, SecureRandom sr)
       throws KeyManagementException {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineInit");
     try {
 
+      // JB: I'm not sure this code is right or that we even have to do it this way, but it does seem to end up with our trust store's certs in it
       SSLContext sslContext = SSLContext.getInstance("TLS", "SunJSSE");
-//      sslContext.init(null, null, null);
-
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      trustManagerFactory.init((KeyStore)null);
+      trustManagerFactory.init((KeyStore) null);
+      TrustManager[] defaultTrustManagers = trustManagerFactory.getTrustManagers();
 
-      TrustManager[] tms = trustManagerFactory.getTrustManagers();
-
-      TrustManager[] mergedTms = new TrustManager[]{new CustomTrustManager(tms[0], tmf.getTrustManagers()[0])};
+      CustomTrustManager customTrustManager = new CustomTrustManager(defaultTrustManagers[0], this.tmf.getTrustManagers()[0]);
+      TrustManager[] mergedTms = new TrustManager[]{customTrustManager};
+      // JB: From the api docs on .init, passing in a null KeyManager should mean we get the defaults. Furthermore, I'm not positive that appian puts any client certs in our KeyStore...anyway...need to investigate this
       sslContext.init(null, mergedTms, sr);
       delegate = sslContext;
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    } catch (NoSuchProviderException e) {
-      throw new RuntimeException(e);
-    } catch (KeyStoreException e) {
+    } catch (NoSuchAlgorithmException | NoSuchProviderException | KeyStoreException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
   protected SSLSocketFactory engineGetSocketFactory() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineGetSocketFactory");
     return delegate.getSocketFactory();
   }
 
   @Override
   protected SSLServerSocketFactory engineGetServerSocketFactory() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineGetServerSocketFactory");
     return delegate.getServerSocketFactory();
   }
 
   @Override
   protected SSLEngine engineCreateSSLEngine() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineCreateSSLEngine");
     return delegate.createSSLEngine();
   }
 
   @Override
   protected SSLEngine engineCreateSSLEngine(String host, int port) {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineCreateSSLEngine");
     return delegate.createSSLEngine(host, port);
   }
 
   @Override
   protected SSLSessionContext engineGetServerSessionContext() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineGetServerSessionContext");
     return delegate.getServerSessionContext();
   }
 
   @Override
   protected SSLSessionContext engineGetClientSessionContext() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineGetClientSessionContext");
     return delegate.getClientSessionContext();
   }
 
   @Override
   protected SSLParameters engineGetSupportedSSLParameters() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineGetSupportedSSLParameters");
     return delegate.getSupportedSSLParameters();
   }
 
   @Override
   protected SSLParameters engineGetDefaultSSLParameters() {
-    System.out.println("JULIAN");
+    System.out.println("JULIAN engineGetDefaultSSLParameters");
     return delegate.getDefaultSSLParameters();
   }
 }

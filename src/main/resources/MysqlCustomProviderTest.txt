@@ -7,7 +7,7 @@ import java.util.Properties;
 public class MysqlCustomProviderTest {
 
   public void execute() {
-    Security.addProvider(new MysqlCustomProvider());
+    Security.addProvider(new CustomProvider());
     try {
     Driver d = (Driver) Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
       // allow all socket factory
